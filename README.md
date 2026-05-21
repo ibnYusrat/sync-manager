@@ -2,6 +2,8 @@
 
 A robust, web-based rsync management tool designed to synchronize directories from a remote host (e.g., a NAS) to a local machine with real-time monitoring and graceful error handling.
 
+![Sync Manager Screenshot](screenshot.jpg)
+
 ## 🚀 Features
 
 - **Real-time Monitoring**: Track sync progress, speed, ETA, and current file being transferred through a clean web interface.
