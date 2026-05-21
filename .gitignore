@@ -1,0 +1,24 @@
+# Logs
+*.log
+
+# Virtual Environment
+venv/
+env/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+sync_data.db
+
+# Old configuration / data files
+sync_config.json
+history.json
+
+# OS generated files
+.DS_Store
