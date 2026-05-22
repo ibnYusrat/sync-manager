@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# --- Safety Check ---
+if [ "$EUID" -eq 0 ]; then
+  echo -e "\033[0;31mError: Please do not run this script as root or with sudo.\033[0m"
+  echo "Run it as your normal user: ./setup.sh"
+  echo "The script will ask for sudo password only when installing systemd services."
+  exit 1
+fi
+
 # --- Configuration ---
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICE_NAME="data-sync.service"

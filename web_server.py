@@ -136,9 +136,12 @@ def browse_remote(path: str = ""):
         
         return {"current_path": path, "entries": sorted(entries, key=lambda x: x["name"])}
     except subprocess.CalledProcessError as e:
-        raise HTTPException(status_code=500, detail=f"SSH Error: {e.output.decode() if e.output else 'Unknown error'}")
+        error_msg = e.output.decode() if e.output else str(e)
+        raise HTTPException(status_code=500, detail=f"SSH Error: {error_msg}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Server Error: {type(e).__name__}: {str(e)}")
 
 def is_safe_path(path):
     try:
