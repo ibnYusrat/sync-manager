@@ -148,6 +148,13 @@ async function fetchLiveStatus() {
                     </div>
                 </div>
                 ${item.error_message ? '<div class="error-text">Error: ' + item.error_message + '</div>' : ''}
+                ${status === 'needs_approval' ? `
+                    <div class="warning-box" style="margin-top: 1rem; padding: 1rem; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 8px;">
+                        <p style="color: #ef4444; font-weight: bold; margin-bottom: 0.5rem;">⚠️ WIPE PROTECTION TRIGGERED</p>
+                        <p style="font-size: 0.875rem; margin-bottom: 1rem;">The source directory is empty, but the destination has data. Synchronizing now will WIPE all local data in this destination.</p>
+                        <button class="btn-danger" onclick="approveWipe(${item.id})">Approve Wipe & Sync</button>
+                    </div>
+                ` : ''}
                 ${(function() {
                     if (item.ignored_files) {
                         try {
@@ -251,6 +258,21 @@ async function deletePair(id) {
         }
     } catch (e) {
         alert("Error deleting pair");
+    }
+}
+
+async function approveWipe(id) {
+    if (!confirm("WARNING: This will permanently DELETE all local files in the destination for this pair to match the empty source. Are you sure?")) return;
+    try {
+        const res = await fetch(`/api/config/pair/${id}/approve_wipe`, {method: 'POST'});
+        if (res.ok) {
+            fetchLiveStatus();
+        } else {
+            const error = await res.json();
+            alert("Failed to approve wipe: " + (error.detail || "Unknown error"));
+        }
+    } catch (e) {
+        alert("Error approving wipe");
     }
 }
 

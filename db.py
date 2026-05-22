@@ -40,6 +40,8 @@ def init_db():
     columns = [column[1] for column in cursor.fetchall()]
     if 'exclude' not in columns:
         cursor.execute("ALTER TABLE directory_pairs ADD COLUMN exclude TEXT")
+    if 'wipe_approved' not in columns:
+        cursor.execute("ALTER TABLE directory_pairs ADD COLUMN wipe_approved INTEGER DEFAULT 0")
     
     # Historical Sessions Table
     cursor.execute('''

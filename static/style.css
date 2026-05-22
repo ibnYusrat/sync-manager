@@ -157,12 +157,14 @@ body {
 .status-badge.idle { background: #e5e7eb; color: #374151; }
 .status-badge.error { background: #fee2e2; color: #991b1b; }
 .status-badge.scanning { background: #fef3c7; color: #92400e; }
+.status-badge.needs_approval { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
 
 /* Darker badges for dark mode */
 body.dark-mode .status-badge.running { background: #1e3a8a; color: #dbeafe; }
 body.dark-mode .status-badge.idle { background: #374151; color: #e5e7eb; }
 body.dark-mode .status-badge.error { background: #7f1d1d; color: #fee2e2; }
 body.dark-mode .status-badge.scanning { background: #78350f; color: #fef3c7; }
+body.dark-mode .status-badge.needs_approval { background: #7f1d1d; color: #fee2e2; border: 1px solid #ef4444; }
 
 .progress-bar-bg {
     width: 100%;

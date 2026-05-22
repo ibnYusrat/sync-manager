@@ -192,6 +192,16 @@ def delete_pair(pair_id: int):
     trigger_sync()
     return {"status": "success"}
 
+@app.post("/api/config/pair/{pair_id}/approve_wipe")
+def approve_wipe(pair_id: int):
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE directory_pairs SET wipe_approved=1 WHERE id=?", (pair_id,))
+    conn.commit()
+    conn.close()
+    trigger_sync()
+    return {"status": "success"}
+
 @app.post("/api/config/host")
 def set_host(data: dict):
     ssh_host = data.get("ssh_host")

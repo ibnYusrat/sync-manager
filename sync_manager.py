@@ -44,16 +44,24 @@ def get_config_from_db():
     row = cursor.fetchone()
     ssh_host = row['value'] if row else None
     
-    cursor.execute("SELECT id, source, destination, exclude FROM directory_pairs")
+    cursor.execute("SELECT id, source, destination, exclude, wipe_approved FROM directory_pairs")
     directories = [{
         'id': r['id'], 
         'source': r['source'], 
         'destination': r['destination'],
-        'exclude': r['exclude']
+        'exclude': r['exclude'],
+        'wipe_approved': r['wipe_approved']
     } for r in cursor.fetchall()]
     conn.close()
     
     return {'ssh_host': ssh_host, 'directories': directories}
+
+def reset_wipe_approval(pair_id):
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE directory_pairs SET wipe_approved=0 WHERE id=?", (pair_id,))
+    conn.commit()
+    conn.close()
 
 def update_live_status(pair_id, status_dict):
     conn = db.get_connection()
@@ -204,6 +212,17 @@ def run_sync():
         local_initial_size = get_local_used_size(actual_dest)
         local_free = get_local_free_space(actual_dest)
         
+        # Wipe Protection: If remote is empty but local is not, require manual approval
+        if remote_size == 0 and local_initial_size > 0:
+            if not folder_pair.get('wipe_approved'):
+                err_msg = f"Source {source} is empty but destination has data. Wipe requires approval."
+                logging.warning(err_msg)
+                update_live_status(pair_id, {'status': 'needs_approval', 'error_message': err_msg})
+                continue
+            else:
+                logging.info(f"Wipe approved for {source}. Proceeding to clear destination.")
+                reset_wipe_approval(pair_id)
+
         if remote_size and remote_size > (local_free + local_initial_size):
             err_msg = f"Insufficient space for {source}"
             logging.error(err_msg)
