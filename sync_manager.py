@@ -4,6 +4,8 @@ import sys
 import time
 import logging
 import re
+import signal
+import threading
 from datetime import datetime
 from pathlib import Path
 import db
@@ -12,6 +14,20 @@ import db
 BASE_DIR = Path(__file__).resolve().parent
 LOG_FILE = BASE_DIR / "sync.log"
 LOCK_FILE = "/tmp/data-sync-manager.lock"
+
+exit_event = threading.Event()
+trigger_event = threading.Event()
+
+def signal_handler(signum, frame):
+    if signum == signal.SIGUSR1:
+        logging.info("Received SIGUSR1: Triggering immediate sync.")
+        trigger_event.set()
+    elif signum in (signal.SIGINT, signal.SIGTERM):
+        logging.info(f"Received signal {signum}: Shutting down.")
+        exit_event.set()
+        trigger_event.set() # Wake up to exit
+
+# ... (rest of the functions remain the same)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -314,15 +330,58 @@ def run_sync():
 
 if __name__ == "__main__":
     db.init_db() # Ensure DB is initialized
+    
+    # Setup signal handlers
+    signal.signal(signal.SIGUSR1, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     if os.path.exists(LOCK_FILE):
         try:
-            pid = int(open(LOCK_FILE, 'r').read())
-            os.kill(pid, 0)
-            sys.exit(1)
-        except: os.remove(LOCK_FILE)
+            with open(LOCK_FILE, 'r') as f:
+                pid_str = f.read().strip()
+                if pid_str:
+                    pid = int(pid_str)
+                    os.kill(pid, 0)
+                    logging.error(f"Sync manager already running with PID {pid}")
+                    sys.exit(1)
+        except (ProcessLookupError, ValueError, FileNotFoundError):
+            try:
+                os.remove(LOCK_FILE)
+            except:
+                pass
 
     try:
-        open(LOCK_FILE, 'w').write(str(os.getpid()))
-        run_sync()
+        with open(LOCK_FILE, 'w') as f:
+            f.write(str(os.getpid()))
+
+        logging.info("Sync manager started.")
+        
+        while not exit_event.is_set():
+            run_sync()
+            
+            if exit_event.is_set():
+                break
+                
+            logging.info("Sync cycle complete. Waiting 10 minutes or until triggered...")
+            # Wait for 10 minutes (600 seconds) or until trigger_event is set
+            triggered = trigger_event.wait(timeout=600)
+            
+            if exit_event.is_set():
+                break
+                
+            if triggered:
+                logging.info("Triggered by signal. Starting new sync cycle.")
+                trigger_event.clear()
+            else:
+                logging.info("Timeout reached. Starting scheduled sync cycle.")
+                
+    except Exception as e:
+        logging.error(f"Main loop error: {e}")
     finally:
-        if os.path.exists(LOCK_FILE): os.remove(LOCK_FILE)
+        if os.path.exists(LOCK_FILE):
+            try:
+                os.remove(LOCK_FILE)
+            except:
+                pass
+        logging.info("Sync manager stopped.")

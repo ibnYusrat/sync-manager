@@ -7,9 +7,24 @@ import uvicorn
 import os
 import subprocess
 import shlex
+import signal
 from pathlib import Path
 
 app = FastAPI()
+
+# Path to the sync manager lock file
+LOCK_FILE = "/tmp/data-sync-manager.lock"
+
+def trigger_sync():
+    if os.path.exists(LOCK_FILE):
+        try:
+            with open(LOCK_FILE, 'r') as f:
+                pid_str = f.read().strip()
+                if pid_str:
+                    pid = int(pid_str)
+                    os.kill(pid, signal.SIGUSR1)
+        except Exception as e:
+            print(f"Failed to trigger sync: {e}")
 
 # Mount static files
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -160,6 +175,7 @@ def add_pair(pair: PairCreate):
                  (pair.source, pair.destination, pair.exclude))
     conn.commit()
     conn.close()
+    trigger_sync()
     return {"status": "success"}
 
 @app.delete("/api/config/pair/{pair_id}")
@@ -170,6 +186,7 @@ def delete_pair(pair_id: int):
     cursor.execute("DELETE FROM live_status WHERE pair_id=?", (pair_id,))
     conn.commit()
     conn.close()
+    trigger_sync()
     return {"status": "success"}
 
 @app.post("/api/config/host")
@@ -182,6 +199,7 @@ def set_host(data: dict):
     cursor.execute("INSERT INTO global_config (key, value) VALUES ('ssh_host', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (ssh_host,))
     conn.commit()
     conn.close()
+    trigger_sync()
     return {"status": "success"}
 
 if __name__ == "__main__":
