@@ -59,7 +59,7 @@
                     </tr>
                 </thead>
                 <tbody id="config-table-body">
-                    <tr><td colspan="4" class="text-center">Loading...</td></tr>
+                    <tr><td colspan="3" class="text-center">Loading...</td></tr>
                 </tbody>
             </table>
         </section>
@@ -68,6 +68,7 @@
         <section class="card">
             <div class="card-header">
                 <h2>Recent Sync History</h2>
+                <button class="btn-secondary btn-small" onclick="clearHistory()">Clear History</button>
             </div>
             <div class="table-responsive">
                 <table class="data-table">
@@ -85,6 +86,15 @@
                         <tr><td colspan="6" class="text-center">Loading...</td></tr>
                     </tbody>
                 </table>
+            </div>
+            <div class="pagination-controls" style="padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <div id="history-page-status" style="font-size: 0.875rem; color: var(--text-muted);">
+                    Showing 0-0 of 0
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button id="history-prev" class="btn-secondary btn-small" onclick="prevHistoryPage()" disabled>Previous</button>
+                    <button id="history-next" class="btn-secondary btn-small" onclick="nextHistoryPage()" disabled>Next</button>
+                </div>
             </div>
         </section>
     </main>

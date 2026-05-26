@@ -85,7 +85,7 @@ async function fetchConfig() {
                 <td>${pair.source}</td>
                 <td>${pair.destination}</td>
                 <td>
-                    <button class="btn-danger btn-small" onclick="deletePair(${pair.id})">Delete</button>
+                    <button class="btn-danger btn-small" onclick="removePair(${pair.id})">Remove Pair</button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -184,19 +184,23 @@ async function fetchLiveStatus() {
     }
 }
 
+let currentHistoryOffset = 0;
+const historyLimit = 20;
+
 async function fetchHistory() {
     try {
-        const res = await fetch('/api/history');
+        const res = await fetch(`/api/history?limit=${historyLimit}&offset=${currentHistoryOffset}`);
         const data = await res.json();
         const tbody = document.getElementById('history-table-body');
         
         tbody.innerHTML = '';
-        if (data.length === 0) {
+        if (!data.history || data.history.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="text-center">No history available.</td></tr>';
+            updateHistoryPagination(data.total || 0);
             return;
         }
         
-        data.forEach(item => {
+        data.history.forEach(item => {
             const date = new Date(item.timestamp).toLocaleString();
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -209,6 +213,8 @@ async function fetchHistory() {
             `;
             tbody.appendChild(tr);
         });
+        
+        updateHistoryPagination(data.total);
     } catch (e) {
         console.error("Failed to fetch history", e);
     }
@@ -248,8 +254,8 @@ async function addPair() {
     }
 }
 
-async function deletePair(id) {
-    if (!confirm("Are you sure you want to delete this directory pair?")) return;
+async function removePair(id) {
+    if (!confirm("Are you sure you want to remove this directory pair?\n\nNote: This will NOT delete any files from your source or destination directories.")) return;
     try {
         const res = await fetch('/api/config/pair/' + id, {method: 'DELETE'});
         if (res.ok) {
@@ -257,7 +263,47 @@ async function deletePair(id) {
             fetchLiveStatus();
         }
     } catch (e) {
-        alert("Error deleting pair");
+        alert("Error removing pair");
+    }
+}
+
+function updateHistoryPagination(total) {
+    const prevBtn = document.getElementById('history-prev');
+    const nextBtn = document.getElementById('history-next');
+    const status = document.getElementById('history-page-status');
+    
+    if (!prevBtn || !nextBtn || !status) return;
+    
+    prevBtn.disabled = currentHistoryOffset === 0;
+    nextBtn.disabled = (currentHistoryOffset + historyLimit) >= total;
+    
+    const start = total === 0 ? 0 : currentHistoryOffset + 1;
+    const end = Math.min(currentHistoryOffset + historyLimit, total);
+    status.textContent = `Showing ${start}-${end} of ${total}`;
+}
+
+function nextHistoryPage() {
+    currentHistoryOffset += historyLimit;
+    fetchHistory();
+}
+
+function prevHistoryPage() {
+    currentHistoryOffset = Math.max(0, currentHistoryOffset - historyLimit);
+    fetchHistory();
+}
+
+async function clearHistory() {
+    if (!confirm("Are you sure you want to clear all transfer history? This action cannot be undone.")) return;
+    try {
+        const res = await fetch('/api/history/clear', {method: 'POST'});
+        if (res.ok) {
+            currentHistoryOffset = 0;
+            fetchHistory();
+        } else {
+            alert("Failed to clear history");
+        }
+    } catch (e) {
+        alert("Error clearing history");
     }
 }
 

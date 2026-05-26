@@ -55,13 +55,31 @@ def get_status():
     return [dict(row) for row in rows]
 
 @app.get("/api/history")
-def get_history():
+def get_history(limit: int = 50, offset: int = 0):
     conn = db.get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM sync_sessions ORDER BY id DESC LIMIT 50")
+    cursor.execute("SELECT * FROM sync_sessions ORDER BY id DESC LIMIT ? OFFSET ?", (limit, offset))
     rows = cursor.fetchall()
+    
+    cursor.execute("SELECT COUNT(*) as total FROM sync_sessions")
+    total = cursor.fetchone()['total']
+    
     conn.close()
-    return [dict(row) for row in rows]
+    return {
+        "history": [dict(row) for row in rows],
+        "total": total,
+        "limit": limit,
+        "offset": offset
+    }
+
+@app.post("/api/history/clear")
+def clear_history():
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM sync_sessions")
+    conn.commit()
+    conn.close()
+    return {"status": "success"}
 
 @app.get("/api/config")
 def get_config():

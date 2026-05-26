@@ -63,7 +63,9 @@ A robust, web-based rsync management tool designed to synchronize directories fr
    - **Source**: The path on the remote machine (e.g., `/mnt/storage/photos/`).
    - **Destination**: The path on the local machine where you want to sync.
    - **Exclude (Optional)**: Patterns to ignore (e.g., `node_modules`, `temp`).
+   - **Removing Pairs**: You can remove a sync pair at any time. This will stop the synchronization for those directories but will **NOT** delete any files from your disk.
 4. The system will automatically start syncing the pairs in the background.
+5. **Manage History**: You can view recent sync sessions in the History section, navigate through pages, or clear the history if it becomes too large.
 
 ## 🔍 Troubleshooting
 

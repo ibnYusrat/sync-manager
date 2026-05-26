@@ -152,15 +152,19 @@ browse_local() {
 
 # 3. Virtual Environment & Dependencies
 echo -e "\n${YELLOW}[3/5] Setting up virtual environment and web dependencies...${NC}"
-pwd
-python -m venv venv
+if [ ! -d "venv" ]; then
+    $PYTHON_BIN -m venv venv
+    echo -e "Virtual environment created."
+else
+    echo -e "Virtual environment already exists."
+fi
 source venv/bin/activate
-pip install -r requirements.txt
-echo -e "Web dependencies installed."
+pip install -q -r requirements.txt
+echo -e "Web dependencies updated."
 
 # 4. Database Setup
-echo -e "\n${YELLOW}[4/5] Initializing Database...${NC}"
-python3 db.py
+echo -e "\n${YELLOW}[4/5] Initializing/Migrating Database...${NC}"
+./venv/bin/python db.py
 echo -e "Database initialized."
 
 # 5. Systemd Service Installation
@@ -170,9 +174,14 @@ echo -e "\n${YELLOW}[5/5] Installing Systemd services...${NC}"
 TEMP_SYNC_SERVICE=$(mktemp)
 TEMP_WEB_SERVICE=$(mktemp)
 
+# Update data-sync.service - Use venv python if possible for consistency, 
+# but sync_manager.py seems to be designed for system python or venv.
+# Let's use venv python for both for better isolation.
+VENV_PYTHON="$PROJECT_DIR/venv/bin/python"
+
 # Update data-sync.service
 sed -e "s|WorkingDirectory=.*|WorkingDirectory=$PROJECT_DIR|" \
-    -e "s|ExecStart=.*|ExecStart=$PYTHON_BIN $PROJECT_DIR/sync_manager.py|" \
+    -e "s|ExecStart=.*|ExecStart=$VENV_PYTHON $PROJECT_DIR/sync_manager.py|" \
     -e "s|User=.*|User=$CURRENT_USER|" \
     "$PROJECT_DIR/data-sync.service" > "$TEMP_SYNC_SERVICE"
 
