@@ -208,8 +208,8 @@ async function fetchHistory() {
                 <td>${item.source}</td>
                 <td>${item.destination}</td>
                 <td>${item.duration || '-'}</td>
-                <td>${item.total_files || '-'}</td>
-                <td>${item.transferred_size || '-'}</td>
+                <td>${formatTotalFiles(item.total_files)}</td>
+                <td>${formatBytes(item.transferred_size)}</td>
             `;
             tbody.appendChild(tr);
         });
@@ -439,4 +439,26 @@ window.onclick = function(event) {
     if (event.target == ignoredModal) {
         closeIgnoredModal();
     }
+}
+
+function formatTotalFiles(totalFilesStr) {
+    if (!totalFilesStr || totalFilesStr === '-') return '-';
+    const str = totalFilesStr.toString();
+    const index = str.indexOf('(');
+    if (index !== -1) {
+        return str.substring(0, index).trim();
+    }
+    return str.trim();
+}
+
+function formatBytes(bytesOrStr) {
+    if (!bytesOrStr || bytesOrStr === '-') return '-';
+    let bytes = parseInt(bytesOrStr.toString().replace(/,/g, '').replace(/[^0-9]/g, ''), 10);
+    if (isNaN(bytes)) return bytesOrStr;
+    if (bytes === 0) return '0 Bytes';
+    
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }

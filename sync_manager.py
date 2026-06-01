@@ -147,9 +147,13 @@ def get_local_free_space(local_path):
 def parse_rsync_stats(lines):
     stats = {}
     for line in lines:
-        if "Number of files:" in line: stats['total_files'] = line.split(":")[1].strip()
-        if "Total file size:" in line: stats['total_size'] = line.split(":")[1].strip()
-        if "Total transferred file size:" in line: stats['transferred_size'] = line.split(":")[1].strip()
+        if "Number of files:" in line:
+            val = line.split(":", 1)[1].strip()
+            stats['total_files'] = val.split("(")[0].strip()
+        if "Total file size:" in line:
+            stats['total_size'] = line.split(":", 1)[1].strip()
+        if "Total transferred file size:" in line:
+            stats['transferred_size'] = line.split(":", 1)[1].strip()
     return stats
 
 def is_safe_path(path):
